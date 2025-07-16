@@ -1,6 +1,6 @@
 # Trexplorer Super: Topologically Correct Centerline Tree Tracking of Tubular Objects in CT Volumes
 
-This repository provides the official implementation of the [Trexplorer Super: Topologically Correct Centerline Tree Tracking of Tubular Objects in CT Volumes](https://arxiv.org/abs/2507.10881) paper by [Roman Naeem](https://research.chalmers.se/en/person/nroman), [David Hagerman](https://research.chalmers.se/en/person/olzond), [Jennifer Alvén](), [Lennart Svensson](https://research.chalmers.se/person/alven) and [Fredrik Kahl](https://research.chalmers.se/person/kahlf). The codebase builds upon [Trexplorer](https://github.com/RomStriker/Trexplorer).
+This repository provides the official implementation of the [Trexplorer Super: Topologically Correct Centerline Tree Tracking of Tubular Objects in CT Volumes](https://arxiv.org/abs/2507.10881) paper by [Roman Naeem](https://research.chalmers.se/en/person/nroman), [David Hagerman](https://research.chalmers.se/en/person/olzond), [Jennifer Alvén](https://research.chalmers.se/person/alven), [Lennart Svensson](https://research.chalmers.se/person/pale) and [Fredrik Kahl](https://research.chalmers.se/person/kahlf). The codebase builds upon [Trexplorer](https://github.com/RomStriker/Trexplorer).
 
 <div align="center">
     <img src="docs/architecture.jpg" alt="arch" width="1000"/>
