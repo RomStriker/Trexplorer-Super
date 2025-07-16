@@ -1,0 +1,13 @@
+resume: '' # Checkpoint path
+
+# EVALUATION
+eval_only: true
+batch_size: 1
+max_inference_levels: 500
+max_nodes_per_level: 500
+volume_eval: true
+sub_volume_eval: false
+test_sample: [1] # list of 'sample_id-tree_id'
+
+# Dataloader
+mask: true
