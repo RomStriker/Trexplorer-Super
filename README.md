@@ -5,14 +5,18 @@ This repository provides the official implementation of the [Trexplorer Super: T
 <div align="center">
     <img src="docs/architecture.jpg" alt="arch" width="1000"/>
 </div>
-
+<hr>
 <div align="center">
     <img src="docs/visual_comparison.jpg" alt="arch" width="1000"/>
 </div>
 
+<hr>
+
 ## Abstract
 
 Tubular tree structures, such as blood vessels and airways, are essential in human anatomy and accurately tracking them while preserving their topology is crucial for various downstream tasks. Trexplorer is a recurrent model designed for centerline tracking in 3D medical images but it struggles with predicting duplicate branches and terminating tracking prematurely. To address these issues, we present Trexplorer Super, an enhanced version that notably improves performance through novel advancements. However, evaluating centerline tracking models is challenging due to the lack of public datasets. To enable thorough evaluation, we develop three centerline datasets, one synthetic and two real, each with increasing difficulty. Using these datasets, we conduct a comprehensive evaluation of existing state-of-the-art (SOTA) models and compare them with our approach. Trexplorer Super outperforms previous SOTA models on every dataset. Our results also highlight that strong performance on synthetic data does not necessarily translate to real datasets.
+
+<hr>
 
 ## Installation
 1. Clone this repository:
@@ -27,6 +31,8 @@ Tubular tree structures, such as blood vessels and airways, are essential in hum
     ```
     pip install torch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 --index-url https://download.pytorch.org/whl/cu118
     ```
+
+<hr>
 
 ## Training
 
@@ -66,6 +72,8 @@ For distributed training, use the following command:
 python -m torch.distributed.launch --nproc_per_node=NUM_GPUS ./src/train_trx.py
 ```
 
+<hr>
+
 ## Evaluation
 For evaluation, in addition to `./configs/train.yaml`, we use  `./configs/eval.yaml`. To evaluate the model, run the following command from the root directory:
 ```
@@ -75,6 +83,8 @@ For distributed training, use the following command:
 ```
 python -m torch.distributed.launch --nproc_per_node=NUM_GPUS ./src/train_trx.py with eval
 ```
+
+<hr>
 
 ## Publication
 If you use this software in your research, please cite our publication:
