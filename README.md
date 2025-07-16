@@ -28,7 +28,7 @@ Tubular tree structures, such as blood vessels and airways, are essential in hum
 
 ### Data Preparation
 1. Download the desired [datasets](https://zenodo.org/records/15888958) to `./Trexplorer/data`.
-2. For ATM'22 and Parse 2022 only centerline graphs are provided. Download the images and segmentation masks from [ATM'22](https://atm22.grand-challenge.org/) and [Parse 2022](https://parse2022.grand-challenge.org/).
+2. For ATM'22 and Parse 2022 only centerline graphs are provided. Download the images and segmentation masks from [ATM'22](https://atm22.grand-challenge.org/) and [Parse 2022](https://parse2022.grand-challenge.org/) and resample them to 0.5 mm isotropically.
 3. Run the `./src/trxsuper/datasets/utils/organize_data.py` script to organize the data into the required directory structure.
 4. Run the script `./src/trxsuper/datasets/utils/generate_val_sub_vol_file.py` to generate 'annots_val_sub_vol.pickle' file that contains the information about annotations for the validation sub-volume images. 
 5. Running the scripts above should give you the following data directory structure:
