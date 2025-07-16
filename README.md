@@ -6,6 +6,10 @@ This repository provides the official implementation of the [Trexplorer Super: T
     <img src="docs/architecture.jpg" alt="arch" width="1000"/>
 </div>
 
+<div align="center">
+    <img src="docs/visual_comparison.jpg" alt="arch" width="1000"/>
+</div>
+
 ## Abstract
 
 Tubular tree structures, such as blood vessels and airways, are essential in human anatomy and accurately tracking them while preserving their topology is crucial for various downstream tasks. Trexplorer is a recurrent model designed for centerline tracking in 3D medical images but it struggles with predicting duplicate branches and terminating tracking prematurely. To address these issues, we present Trexplorer Super, an enhanced version that notably improves performance through novel advancements. However, evaluating centerline tracking models is challenging due to the lack of public datasets. To enable thorough evaluation, we develop three centerline datasets, one synthetic and two real, each with increasing difficulty. Using these datasets, we conduct a comprehensive evaluation of existing state-of-the-art (SOTA) models and compare them with our approach. Trexplorer Super outperforms previous SOTA models on every dataset. Our results also highlight that strong performance on synthetic data does not necessarily translate to real datasets.
