@@ -2,40 +2,40 @@
 # Number of decoding layers in the transformer
 dec_layers: 6
 share_direc_embed: true
-share_direc_embed_num: 6
+share_direc_embed_num: 5
 
 # Intermediate size of the feedforward layers in the transformer blocks
 dim_feedforward: 2048
 dropout: 0.1
-nheads: 8
+nheads: 16
 pre_norm: false
 
 # Matcher
 set_cost_class: 1.0
-set_cost_direction: 1.0
+set_cost_direction: 3.0
 set_cost_radius: 1.0
 
 # Loss
 cls_loss_coef: 1.0
-dir_loss_coef: 1.0
+dir_loss_coef: 3.0
 rad_loss_coef: 1.0
 # Use custom loss weights for each label
-custom_focal_weights_value: [0.33300486, 0.32274583, 0.33308958, 0.01115972]
+custom_focal_weights_value: [0.9980381, 0.762981, 0.994657, 0.244324]
 clip_max_norm: 0.1 # gradient clipping max norm
 
 # Dataset & Dataloader
 data_dir: data/synthetic
 cache_rate_train: 1.0 # percentage of cached data in total
 n_workers_train: 2
-batch_size: 4
+batch_size: 8
 batch_size_val: 1
 mask: false
 determinism: true
-root_prob: 0.0
-bifur_prob: 0.0
-end_prob: 0.0
+root_prob: 0.2
+bifur_prob: 0.5
+end_prob: 0.3
 # SmartCacheDataset Params
-cache_num: 16
+cache_num: 32
 replace_rate: 0.125
 num_init_workers: 4
 num_replace_workers: 2
@@ -55,48 +55,47 @@ world_size: 1 # number of distributed processes
 dist_url: env:// # url used to set up distributed training
 
 # Swin DETR
-num_queries: 50
-num_bifur_queries: 25
+num_queries: 196
+num_bifur_queries: 26
 seq_len: 10
-sub_vol_size: 32
-num_prev_pos: 5
+sub_vol_size: 64
+num_prev_pos: 10
 
 # Swin UNETR
-hidden_dim: 96
+hidden_dim: 512
 unetr_dim: 24
 depths: [2, 2, 2, 2]
 num_heads: [3, 6, 12, 24]
-patch_size: 1
+patch_size: 2
 window_size: 7
 
 # LR scheduler
 lr: 0.0001
 min_lr_mltp:  0.1 # minimum learning rate multiplier
-epochs: 60000
+epochs: 12000
 weight_decay: 0.0001
 
 # Validation
 volume_eval: true
 sub_volume_eval: true
-val_interval_sv: 100
-val_interval: 100
+val_interval_sv: 500
+val_interval: 500
 save_checkpoint: 10
-save_model_interval: 2000
+save_model_interval: 1000
 eval_limit_levels: true
-max_inference_levels: 50
+max_inference_levels: 200
 eval_limit_nodes_per_level: true
-max_nodes_per_level: 500
+max_nodes_per_level: 200
 test_sample: [] # list of 'sample_id-tree_id'
 
 # window input intensity values (clamp)
-window_input: false
-window_max: -500
-window_min: -1000
+# Synthetic: False or [255, 0], ATM: [-500, -1000], PARSE: [700, -1000]
+window_input: False
+window_max: 255
+window_min: 0
 
 # Super Trajectory Training
-# Variable training trajectory length
-var_traj_train_len: false
-traj_train_len: 3
+traj_train_len: 6
 
 # Focal Cross Attention
-focus_vol_size: false
+focus_vol_size: 16

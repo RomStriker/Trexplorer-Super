@@ -89,12 +89,12 @@ def build_training_transforms(cfg):
 
     transforms += [ExtRandomSubTreed(["label"], cfg.root_prob, cfg.bifur_prob,
                                      cfg.end_prob, cfg.seq_len, cfg.num_prev_pos,
-                                     cfg.var_traj_train_len, cfg.traj_train_len),
+                                     cfg.traj_train_len),
                    AddRandMicroTrajNoised(["label"]),
                    AddRandBifurTrajNoised(["label"], cfg.num_prev_pos, cfg.seq_len,
                                           cfg.traj_train_len),
                    DivideSubTreed(["label"], cfg.seq_len, cfg.num_prev_pos,
-                                  cfg.var_traj_train_len, cfg.traj_train_len),
+                                  cfg.traj_train_len),
                    ConvertTreeToTargetsd(["label"], cfg.seq_len, cfg.num_prev_pos, cfg.sub_vol_size,
                                          cfg.class_dict),
                    CropAndPadd(["image"], cfg.sub_vol_size),
@@ -442,7 +442,6 @@ if __name__ == '__main__':
             'window_input': False,
             'window_max': -500,
             'window_min': -1000,
-            'var_traj_train_len': True,
             'traj_train_len': 6,
             }
 
