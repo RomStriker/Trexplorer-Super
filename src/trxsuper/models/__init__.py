@@ -47,7 +47,8 @@ def build_model(args):
         losses=losses,
         class_dict=args.class_dict,
         custom_focal_weights_value=args.custom_focal_weights_value,
-        num_bifur_queries=args.num_bifur_queries,)
+        num_bifur_queries=args.num_bifur_queries
+    )
 
     model.to(device)
     criterion.to(device)

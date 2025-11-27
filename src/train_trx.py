@@ -16,7 +16,6 @@ import trxsuper.util.eval_utils as eval_utils
 from trxsuper.util.eval_utils import get_score_nx_single
 import trxsuper.util.misc as utils
 import trxsuper.datasets.cache_dataset_vtl as cd_vtl
-import trxsuper.datasets.cache_dataset as cd
 from trxsuper.models import build_model
 from trxsuper.util.misc import nested_dict_to_namespace, restore_config
 
@@ -53,19 +52,19 @@ def build_dataloaders_vtl(args):
     if not args.eval_only:
         dataset_train = cd_vtl.build_dataset(args, 'training')
     if args.volume_eval:
-        dataset_val = cd.build_dataset(args, 'validation')
+        dataset_val = cd_vtl.build_dataset(args, 'validation')
     if args.sub_volume_eval:
-        dataset_val_sv = cd.build_dataset(args, 'validation_sv')
+        dataset_val_sv = cd_vtl.build_dataset(args, 'validation_sv')
 
     if not args.eval_only:
         data_loader_train = ThreadDataLoader(dataset_train, batch_size=args.batch_size,
                                              collate_fn=cd_vtl.train_collate_fn, num_workers=0, shuffle=True)
     if args.volume_eval:
         data_loader_val = ThreadDataLoader(dataset_val, batch_size=args.batch_size_val,
-                                           collate_fn=cd.val_collate_fn, num_workers=0)
+                                           collate_fn=cd_vtl.val_collate_fn, num_workers=0)
     if args.sub_volume_eval:
         data_loader_val_sv = ThreadDataLoader(dataset_val_sv, batch_size=args.batch_size,
-                                              collate_fn=cd.train_collate_fn, num_workers=0)
+                                              collate_fn=cd_vtl.train_collate_fn, num_workers=0)
 
     return data_loader_train, data_loader_val, data_loader_val_sv
 
@@ -285,7 +284,7 @@ def train(args: Namespace) -> None:
             # clear memory
             clear_memory_custom(args)
 
-        if args.volume_eval  and (not epoch % args.val_interval) or epoch == (args.epochs - 1):
+        if args.volume_eval and (not epoch % args.val_interval) or epoch == (args.epochs - 1):
             if not epoch:
                 args.batch_size_per_sample = args.batch_size
                 logger.info("sub_vol batch_size_per_sample: ", args.batch_size_per_sample)

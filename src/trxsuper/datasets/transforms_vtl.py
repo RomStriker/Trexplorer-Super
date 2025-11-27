@@ -12,12 +12,15 @@ os.environ["BIGTREE_CONF_ASSERTIONS"] = ""
 from bigtree import find_name, levelordergroup_iter, preorder_iter, find_full_path, Node
 from monai.utils import convert_to_tensor, pytorch_after
 from monai.transforms import (
+    LoadImage,
+    NormalizeIntensity,
+    ThresholdIntensity,
+    Compose,
     Transform,
     MapTransform,
     Randomizable,
     Crop,
-    Pad,
-    Resize,)
+    Pad)
 
 
 class LoadAnnotPickle(Transform):
@@ -124,40 +127,6 @@ class CropAndPadd(MapTransform):
         return d
 
 
-class ComputeImageMin(Transform):
-    def __init__(self, norm_mode):
-        self.norm_mode = norm_mode
-
-    def __call__(self, data):
-        # compute min value
-        if self.norm_mode in ['z-norm', 'none']:
-            data = torch.min(data)
-        elif self.norm_mode in ['min-max']:
-            data = torch.tensor(0.0, dtype=torch.float32)
-        elif self.norm_mode in ['min-max-0-center']:
-            data = torch.tensor(-1.0, dtype=torch.float32)
-        else:
-            raise NotImplementedError
-
-        return data
-
-
-class ComputeImageMax(Transform):
-    def __init__(self, norm_mode):
-        self.norm_mode = norm_mode
-
-    def __call__(self, data):
-        # compute min value
-        if self.norm_mode in ['z-norm', 'none']:
-            data = torch.max(data)
-        elif self.norm_mode in ['min-max', 'min-max-0-center']:
-            data = torch.tensor(1.0, dtype=torch.float32)
-        else:
-            raise NotImplementedError
-
-        return data
-
-
 class ComputeImageRanged(MapTransform):
     def __init__(self, keys):
         super().__init__(keys)
@@ -172,13 +141,12 @@ class ComputeImageRanged(MapTransform):
 
 class ExtRandomSubTree(Randomizable, Transform):
     def __init__(self, root_prob, bifur_prob, end_prob, seq_len, num_prev_pos,
-                 var_traj_train_len, traj_train_len):
+                 traj_train_len):
         self.root_prob = root_prob
         self.bifur_prob = bifur_prob
         self.end_prob = end_prob
         self.seq_len = seq_len
         self.num_prev_pos = num_prev_pos
-        self.var_traj_train_len = var_traj_train_len
         self.traj_train_len = traj_train_len
         self.traj_train_num_pts = (traj_train_len * (seq_len - 1)) + 1
 
@@ -255,7 +223,7 @@ class ExtRandomSubTree(Randomizable, Transform):
     @staticmethod
     def select_nearby_point(full_tree, point_id, dist):
         selected_node = find_name(full_tree, point_id)
-        for i in range(dist):
+        for _ in range(dist):
             parent = selected_node.parent
             if parent is not None:
                 selected_node = parent
@@ -274,6 +242,48 @@ class ExtRandomSubTree(Randomizable, Transform):
                 break
 
         return past_traj_head_node, past_nodes_num
+
+    @staticmethod
+    def create_subtree_with_past_tr_val(selected_node, past_traj_num, seq_len):
+        root_node = Node(selected_node.name,
+                         position=selected_node.position,
+                         radius=selected_node.radius,
+                         label=selected_node.label)
+
+        for i, level in enumerate(levelordergroup_iter(selected_node)):
+            if i == 0:
+                continue
+            elif i <= seq_len:
+                for node in level:
+                    parent_node = find_name(root_node, node.parent.name)
+                    Node(node.name,
+                         position=node.position,
+                         radius=node.radius,
+                         parent=parent_node,
+                         label=node.label)
+            else:
+                break
+
+        if selected_node.parent is not None:
+            current_node = selected_node.parent
+            past_tr_end_node = Node(current_node.name,
+                                    position=current_node.position,
+                                    radius=current_node.radius,
+                                    label=current_node.label)
+
+            past_tr_head_node = past_tr_end_node
+            for _ in range(1, past_traj_num):
+                current_node = current_node.parent
+                past_tr_head_node.parent = Node(current_node.name,
+                                                position=current_node.position,
+                                                radius=current_node.radius,
+                                                label=current_node.label)
+                past_tr_head_node = past_tr_head_node.parent
+            root_node.parent = past_tr_end_node
+        else:
+            past_tr_head_node = root_node
+
+        return root_node, past_tr_head_node
 
     def create_subtree_with_past_tr(self, selected_node, selected_path, max_root_buffer_nodes):
         selected_node_index = selected_path.index(selected_node.name)
@@ -362,10 +372,10 @@ class ExtRandomSubTree(Randomizable, Transform):
 
 class ExtRandomSubTreed(Randomizable, MapTransform):
     def __init__(self, keys, root_prob, bifur_prob, end_prob, seq_len, num_prev_pos,
-                 var_traj_train_len, traj_train_len):
+                 traj_train_len):
         super(Randomizable, self).__init__(keys)
         self.transform = ExtRandomSubTree(root_prob, bifur_prob, end_prob,
-                                          seq_len, num_prev_pos, var_traj_train_len, traj_train_len)
+                                          seq_len, num_prev_pos, traj_train_len)
 
     def set_random_state(self, seed=None, state=None):
         self.transform.set_random_state(seed, state)
@@ -381,10 +391,9 @@ class ExtRandomSubTreed(Randomizable, MapTransform):
 
 
 class DivideSubTree(Transform):
-    def __init__(self, seq_len, num_prev_pos, var_traj_train_len, traj_train_len):
+    def __init__(self, seq_len, num_prev_pos, traj_train_len):
         self.seq_len = seq_len
         self.num_prev_pos = num_prev_pos
-        self.var_traj_train_len = var_traj_train_len
         self.traj_train_len = traj_train_len
         self.traj_train_num_pts = (traj_train_len * (seq_len - 1)) + 1
 
@@ -471,9 +480,9 @@ class DivideSubTree(Transform):
 
 
 class DivideSubTreed(MapTransform):
-    def __init__(self, keys, seq_len, num_prev_pos, var_traj_train_len, traj_train_len):
+    def __init__(self, keys, seq_len, num_prev_pos, traj_train_len):
         super().__init__(keys)
-        self.transform = DivideSubTree(seq_len, num_prev_pos, var_traj_train_len, traj_train_len)
+        self.transform = DivideSubTree(seq_len, num_prev_pos, traj_train_len)
 
     def __call__(self, data):
         d = dict(data)
@@ -1192,4 +1201,98 @@ class ConvertTreeToTargetsd(MapTransform):
         for key in self.keys:
             d[key] = self.transform(d[key])
 
+        return d
+
+
+class LoadImageCropsAndTrees(Transform):
+    def __init__(self, seq_len, num_prev_pos, sub_vol_size, class_dict, images, annots, image_mins, masks):
+        self.images = images
+        self.annots = annots
+        self.image_mins = image_mins
+        self.masks = masks
+        self.sub_vol_size = sub_vol_size
+        self.crop_and_pad = CropAndPad(sub_vol_size)
+        self.convert_tree_to_targets = ConvertTreeToTargets(seq_len, num_prev_pos, sub_vol_size, class_dict)
+
+    def get_annot_dict(self, selected_node, input_dict):
+        _, past_traj_num = ExtRandomSubTree.get_past_traj_start(selected_node, self.get_sub_tree.num_prev_pos)
+        selected_node, past_traj_head_node = ExtRandomSubTree.create_subtree_with_past_tr_val(selected_node,
+                                                                                           past_traj_num, self.get_sub_tree.seq_len)
+        data = self.convert_tree_to_targets.extract_sub_tree(selected_node)
+        data['past_tr'] = self.convert_tree_to_targets.generate_past_trajectory_pp(selected_node, data['root_position'])
+        data.update(input_dict)
+
+        return data
+
+    def get_image_crops(self, input, selected_node):
+        image = self.crop_and_pad(self.images[input['sample_id']], selected_node.position,
+                                  self.image_mins[input['sample_id']])
+        if self.masks is not None:
+            mask = self.crop_and_pad(self.masks[input['sample_id']], selected_node.position,
+                                     0.0)
+        else:
+            mask = None
+
+        return image, mask
+
+    def __call__(self, input):
+        annot_tree = self.annots[input['sample_id']]['branches'][input['tree_id']]
+        selected_node = find_name(annot_tree, input['node_id'])
+        input_dict = {'index': input['sample_id'],
+                      'tree_id': input['tree_id'],
+                      'point_id': input['node_id'],
+                      'point_type': input['point_type'],
+                      'dist': input['distance']}
+
+        data = self.get_annot_dict(selected_node, input_dict)
+        image, mask = self.get_image_crops(input, selected_node)
+
+        return data, image, mask
+
+
+class LoadImageCropsAndTreesd(MapTransform):
+    def __init__(self, keys, seq_len, num_prev_pos, sub_vol_size, class_dict, mask, paths,
+                 window_input, window_min, window_max, allow_missing_keys=False):
+        super().__init__(keys, allow_missing_keys)
+        image_mins = {}
+        images = {}
+        annots = {}
+        if mask:
+            masks = {}
+        else:
+            masks = None
+
+        image_reader = LoadImage(image_only=True)
+        annot_reader = LoadAnnotPickle()
+        self.norm = NormalizeIntensity()
+
+        if window_input:
+            window = Compose(
+                [ThresholdIntensity(threshold=window_max, above=False, cval=window_max),
+                 ThresholdIntensity(threshold=window_min, above=True, cval=window_min)])
+
+        for path in paths:
+            index = [int(s) for s in re.findall(r'\d+', path[0])][-1]
+            if window_input:
+                image = window(image_reader(path[0]).unsqueeze(0))
+            else:
+                image = image_reader(path[0]).unsqueeze(0)
+            image = self.norm(image)
+            image_min = torch.min(image)
+            images[index] = image
+            image_mins[index] = image_min
+            annots[index] = annot_reader(path[1])
+            if mask:
+                masks[index] = image_reader(path[2]).unsqueeze(0)
+
+        self.mask = mask
+        self.transform = LoadImageCropsAndTrees(seq_len, num_prev_pos, sub_vol_size, class_dict,
+                                                images, annots, image_mins, masks)
+
+    def __call__(self, data):
+        d = dict(data)
+        for key in self.keys:
+            d[key], image, mask = self.transform(d[key])
+            d['image'] = self.norm(image) if self.norm_crop else image
+            d['mask'] = mask
         return d

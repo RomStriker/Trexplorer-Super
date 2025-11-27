@@ -60,7 +60,6 @@ class SwinDETR(nn.Module):
                                   self.num_past_tr_tokens * self.hidden_dim,
                                   self.num_past_tr_tokens * self.hidden_dim, 3)
         self.step_embed = nn.Linear(1, self.hidden_dim)
-        self.num_extra_tokens += 1
         self.num_extra_tokens = 4
 
         self.bifur_offset_embed = nn.Embedding(num_bifur_queries, self.hidden_dim)

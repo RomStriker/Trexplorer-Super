@@ -13,11 +13,10 @@ from src.trxsuper.util import misc as utils
 from monai.transforms import (
     Compose,
     LoadImage,
-    ThresholdIntensity)
-from src.trxsuper.datasets.transforms import (
+    ThresholdIntensity,
+    NormalizeIntensity)
+from src.trxsuper.datasets.transforms_vtl import (
     CropAndPad,
-    LoadImageCropsAndTreesd,
-    ComputeImageMin,
     LoadAnnotPickle)
 
 
@@ -164,7 +163,7 @@ class TrexplorerSuper:
                     optimizer.step()
 
             if skip_lr_step:
-                print("Skipping LR Scheduler step.")
+                self.logger("Skipping LR Scheduler step.")
             else:
                 lr_scheduler.step()
 
@@ -353,7 +352,7 @@ class TrexplorerSuper:
         parent = current_node
         root_position = np.asarray(current_node['position'])
 
-        for i in range(self.args.num_prev_pos):
+        for _ in range(self.args.num_prev_pos):
             node_info_list = []
             node_position = (np.asarray(parent['position']) - root_position).astype(float)
             node_position /= (self.args.focus_vol_size // 2)
@@ -611,7 +610,7 @@ class TrexplorerSuper:
         all_preds = []
         all_targets = []
         elapsed_time = []
-        crop_pad = CropAndPad(self.args.sub_vol_size, self.args.zoom_levels, 'area')
+        crop_pad = CropAndPad(self.args.sub_vol_size, 'area')
 
         classes_to_filter = ['background', 'pad'] if self.args.pad_class else ['background']
         # classes that will permanently end tracking for a branch with point of these classes
@@ -819,11 +818,10 @@ class TrexplorerSuper:
                                         ThresholdIntensity(threshold=self.args.window_min,
                                                            above=True, cval=self.args.window_min)])
             samples = window_transform(samples)
-        norm = LoadImageCropsAndTreesd.normalize(self.args.norm_mode)
+        norm = NormalizeIntensity()
         samples = norm(samples)
         samples = samples.unsqueeze(0).unsqueeze(0).to(self.args.device)
-        compute_min = ComputeImageMin(self.args.norm_mode)
-        samples_min = compute_min(samples).to(self.args.device)
+        samples_min = torch.min(samples).to(self.args.device)
 
         # load the target and mask
         annot_reader = LoadAnnotPickle()

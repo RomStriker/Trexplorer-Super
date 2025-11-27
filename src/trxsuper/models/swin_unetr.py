@@ -67,7 +67,6 @@ class SwinUNETR(nn.Module):
             window_size=8,
             patch_size=1,
             mem_vol_ds=1,
-            take_in_between_level=False,
     ) -> None:
         """
         Args:
