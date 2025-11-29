@@ -163,7 +163,7 @@ class TrexplorerSuper:
                     optimizer.step()
 
             if skip_lr_step:
-                self.logger("Skipping LR Scheduler step.")
+                self.logger.info("Skipping LR Scheduler step.")
             else:
                 lr_scheduler.step()
 
@@ -411,13 +411,11 @@ class TrexplorerSuper:
         return sub_vol_batch, past_traj_pos_batch
 
     @staticmethod
-    def update_perma_finished_branches(node_perma_finished_branches, perma_end_query, query_classes,
+    def update_perma_finished_branches(node_perma_finished_branches, query_classes,
                                        perma_end_classes, selected_queries):
         """
         Update the permanently finished branches list
         """
-        if perma_end_query is not None:
-            node_perma_finished_branches.append(perma_end_query)
         if query_classes[:, selected_queries[0]] in perma_end_classes:
             node_perma_finished_branches.append(selected_queries[0])
 
@@ -556,20 +554,18 @@ class TrexplorerSuper:
             step_node = curr_step[node_index]
 
             # get the node for the next step of this continuing branch
-            next_step_node, perma_end_query = self.get_cont_next_node_ar2_nx(query_index, step_node,
-                                                                             pred_tree, curr_node_root_pos, query_positions, query_radii,
-                                                                             query_classes, level, step,
-                                                                             point_hidden_state[query_index] if point_hidden_state is not None else None)
+            next_step_node = self.get_cont_next_node_ar2_nx(query_index, step_node, pred_tree,
+                                                            curr_node_root_pos, query_positions, query_radii, query_classes, level, step,
+                                                            point_hidden_state[query_index] if point_hidden_state is not None else None)
 
             # add the next step node's position to the global list of positions
             if next_step_node is not None:
                 next_step.append(next_step_node)
 
             # update permanently finished branches
-            if self.args.eval_perma_finish_end_bifur and node_perma_finished_branches is not None:
+            if node_perma_finished_branches is not None:
                 self.update_perma_finished_branches(node_perma_finished_branches,
-                                                    perma_end_query, query_classes, perma_end_classes,
-                                                    selected_queries)
+                                                    query_classes, perma_end_classes, selected_queries)
 
     def add_cont_branch_point_beg(self, selected_queries, curr_step, pred_tree, curr_node_root_pos, query_positions,
                                   query_radii, level, step, next_step, node_perma_finished_branches,
@@ -577,12 +573,12 @@ class TrexplorerSuper:
         """
         Add continuing branches points for the first step
         """
-        next_step_node, perma_end_query = self.get_cont_next_node_ar2_nx(selected_queries[0],
-                                                                         curr_step[0], pred_tree, curr_node_root_pos, query_positions,
-                                                                         query_radii, query_classes, level, step, point_hidden_state)
+        next_step_node = self.get_cont_next_node_ar2_nx(selected_queries[0],
+                                                        curr_step[0], pred_tree, curr_node_root_pos, query_positions,
+                                                        query_radii, query_classes, level, step, point_hidden_state)
         if next_step_node is not None:
             next_step.append(next_step_node)
-        self.update_perma_finished_branches(node_perma_finished_branches, perma_end_query,
+        self.update_perma_finished_branches(node_perma_finished_branches,
                                             query_classes, perma_end_classes, selected_queries)
 
     def init_req_lists(self, indices, pred_tree, curr_step, selected_queries,
@@ -610,9 +606,9 @@ class TrexplorerSuper:
         all_preds = []
         all_targets = []
         elapsed_time = []
-        crop_pad = CropAndPad(self.args.sub_vol_size, 'area')
+        crop_pad = CropAndPad(self.args.sub_vol_size)
 
-        classes_to_filter = ['background', 'pad'] if self.args.pad_class else ['background']
+        classes_to_filter = ['background']
         # classes that will permanently end tracking for a branch with point of these classes
         perma_end_classes = [self.args.class_dict['bifurcation'], self.args.class_dict['end']]
 
@@ -797,9 +793,9 @@ class TrexplorerSuper:
     @torch.no_grad()
     def evaluate_sinsam(self, model, sample_id):
         model.eval()
-        crop_pad = CropAndPad(self.args.sub_vol_size, self.args.zoom_levels, 'area')
+        crop_pad = CropAndPad(self.args.sub_vol_size)
 
-        classes_to_filter = ['background', 'pad'] if self.args.pad_class else ['background']
+        classes_to_filter = ['background']
         perma_end_classes = [self.args.class_dict['bifurcation'], self.args.class_dict['end']]
 
         annot_dir = os.path.join(self.args.data_dir, 'annots_test')
@@ -970,7 +966,7 @@ class TrexplorerSuper:
                                                                        finished_branches_end_nodes, global_branch_id, query_positions,
                                                                        query_radii, curr_node_root_pos, level, step,
                                                                        next_step, node_perma_finished_branches, perma_end_classes,
-                                                                       query_classes, point_hidden_state)
+                                                                       query_classes, selected_queries, point_hidden_state)
 
                             curr_step = next_step
                             indices = self.get_updated_indices_nx(indices, curr_step, pred_tree)
@@ -1002,7 +998,7 @@ class TrexplorerSuper:
         all_preds = []
         all_targets = []
         elapsed_time = []
-        classes_to_filter = ['background', 'pad'] if self.args.pad_class else ['background']
+        classes_to_filter = ['background']
         level = 0
         perma_end_classes = [self.args.class_dict['bifurcation'], self.args.class_dict['end']]
 
@@ -1106,7 +1102,7 @@ class TrexplorerSuper:
                             self.add_new_bifur_branches_points(bifur_dict, pred_tree, new_branches, curr_step,
                                                                finished_branches_end_nodes, global_branch_id, query_positions,
                                                                query_radii, curr_node_root_pos, level, step,
-                                                               None, next_step, node_perma_finished_branches,
+                                                               next_step, node_perma_finished_branches,
                                                                perma_end_classes, query_classes, selected_queries)
 
                     curr_step = next_step

@@ -66,7 +66,6 @@ class SwinUNETR(nn.Module):
             downsample="merging",
             window_size=8,
             patch_size=1,
-            mem_vol_ds=1,
     ) -> None:
         """
         Args:
@@ -105,9 +104,6 @@ class SwinUNETR(nn.Module):
         img_size = ensure_tuple_rep(img_size, spatial_dims)
         patch_size = ensure_tuple_rep(patch_size, spatial_dims)
         window_size = ensure_tuple_rep(window_size, spatial_dims)
-        self.mem_vol_ds = mem_vol_ds
-        if self.patch_size < 2:
-            assert self.mem_vol_ds >= 2, "For patch size 1, we must take output from level 2 or higher."
 
         if spatial_dims not in (2, 3):
             raise ValueError("spatial dimension should be 2 or 3.")

@@ -97,12 +97,10 @@ def build_training_transforms(cfg):
                                   cfg.traj_train_len),
                    ConvertTreeToTargetsd(["label"], cfg.seq_len, cfg.num_prev_pos, cfg.sub_vol_size,
                                          cfg.class_dict),
-                   CropAndPadd(["image"], cfg.sub_vol_size),
-                   ToTensord(keys=["image"], track_meta=False)]
+                   CropAndPadd(["image"], cfg.sub_vol_size)]
 
     if cfg.mask:
-        transforms += [CropAndPadd(["mask"], cfg.sub_vol_size),
-                       ToTensord(keys=["mask"], track_meta=False)]
+        transforms += [CropAndPadd(["mask"], cfg.sub_vol_size)]
 
     if is_main_process():
         for i, t in enumerate(transforms):
@@ -155,7 +153,7 @@ def build_validation_transforms(cfg):
 
 
 def build_training_datasets_dist(cfg, split, train_transform):
-    files = load_datalist(cfg, split)
+    files = load_datalist(cfg.data_dir, split)
     if is_main_process():
         print(f"Number of files in full {split} dataset: {len(files)}")
 
@@ -180,7 +178,7 @@ def build_training_datasets_dist(cfg, split, train_transform):
 
 
 def build_training_datasets(cfg, split, transforms):
-    files = load_datalist(cfg, split)
+    files = load_datalist(cfg.data_dir, split)
     print("Number of files in full training dataset: {}".format(len(files)))
 
     dataset = SmartCacheDataset(
@@ -197,7 +195,7 @@ def build_training_datasets(cfg, split, transforms):
 
 
 def build_validation_datasets_dist(cfg, split, transforms):
-    files = load_datalist(cfg, split)
+    files = load_datalist(cfg.data_dir, split)
     if is_main_process():
         print(f"Number of files in full {split} dataset: {len(files)}")
 
@@ -221,7 +219,7 @@ def build_validation_datasets_dist(cfg, split, transforms):
 
 
 def build_validation_datasets(cfg, split, transforms):
-    files = load_datalist(cfg, split)
+    files = load_datalist(cfg.data_dir, split)
     print(f"Number of files in full {split} dataset: {len(files)}")
 
     dataset = CacheDataset(
@@ -291,6 +289,39 @@ def train_collate_fn(batch):
                                "past_tr": past_trs_batch, "mask": masks_batch})
 
     return batches_output
+
+
+def val_sv_collate_fn(batch):
+    images = []
+    labels = []
+    past_trs = []
+    masks = []
+
+    for sample in batch:
+        images.append(torch.unsqueeze(sample['image'], 0))
+        labels.append(sample['label'])
+        past_trs.append(torch.unsqueeze(sample['label']['past_tr'], 0))
+        if isinstance(sample['mask'], torch.Tensor):
+            masks.append(torch.unsqueeze(sample['mask'], 0))
+
+    images_batch = torch.cat(images, dim=0)
+    # B, C, D, H, W
+    images_batch = images_batch.contiguous()
+
+    if isinstance(sample['mask'], torch.Tensor):
+        masks_batch = torch.cat(masks, dim=0)
+        masks_batch = masks_batch.type(torch.BoolTensor)
+        masks_batch = masks_batch.contiguous()
+    else:
+        masks_batch = None
+
+    past_trs_batch = torch.cat(past_trs, dim=0)
+    # B, num_prev_pos x dim
+    past_trs_batch = past_trs_batch.contiguous()
+    batch_output = {"image": images_batch, "label": labels,
+                    "past_tr": past_trs_batch, "mask": masks_batch}
+
+    return batch_output
 
 
 def val_collate_fn(batch):

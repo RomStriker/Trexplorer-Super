@@ -4,10 +4,10 @@ import torch
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
-from src.trxsuper.util.eval_utils import (get_score_nx_single_v2,
-                                          get_score_nx_single_branch,
-                                          get_stats_message_v2,
-                                          get_stats_message_v2_branch,
+from src.trxsuper.util.eval_utils import (get_score_nx,
+                                          get_score_nx_branch,
+                                          get_stats_message,
+                                          get_stats_message_branch,
                                           betti)
 from src.trxsuper.datasets.graph_utils import (get_resampled_graph,
                                                rename_node_names, add_edge_lengths)
@@ -121,12 +121,12 @@ if __name__ == '__main__':
             else:
                 preds, targets, sample_ids = load_graphs(pred_dir, gt_dir, dataset)
             # compute precision, recall and f1 score
-            stats = get_score_nx_single_v2(preds, targets, False)
-            prec_list.append(stats['selected_node']['avg_scores'][1])
-            recall_list.append(stats['selected_node']['avg_scores'][3])
-            f1_list.append(stats['selected_node']['avg_scores'][5])
-            radii_list.append(stats['selected_node']['avg_scores'][6])
-            stats_message = get_stats_message_v2(stats, sample_ids=sample_ids, averages_only=True)
+            stats = get_score_nx(preds, targets, False)
+            prec_list.append(stats['avg_scores'][1])
+            recall_list.append(stats['avg_scores'][3])
+            f1_list.append(stats['avg_scores'][5])
+            radii_list.append(stats['avg_scores'][6])
+            stats_message = get_stats_message(stats, sample_ids=sample_ids, averages_only=True)
             print(stats_message)
 
         prec_list = np.array(prec_list)
@@ -180,11 +180,11 @@ if __name__ == '__main__':
             else:
                 preds, targets, _ = load_graphs(pred_dir, gt_dir, dataset)
             # compute precision, recall and f1 score
-            stats = get_score_nx_single_branch(preds, targets, False)
-            prec_list.append(stats['selected_node']['avg_scores'][3])
-            recall_list.append(stats['selected_node']['avg_scores'][4])
-            f1_list.append(stats['selected_node']['avg_scores'][5])
-            stats_message = get_stats_message_v2_branch(stats, averages_only=True)
+            stats = get_score_nx_branch(preds, targets, False)
+            prec_list.append(stats['avg_scores'][3])
+            recall_list.append(stats['avg_scores'][4])
+            f1_list.append(stats['avg_scores'][5])
+            stats_message = get_stats_message_branch(stats, averages_only=True)
             print(stats_message)
 
         prec_list = np.array(prec_list)

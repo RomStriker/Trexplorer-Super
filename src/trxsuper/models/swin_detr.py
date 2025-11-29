@@ -405,7 +405,7 @@ class SetCriterion(nn.Module):
 
     def get_loss(self, loss, outputs, targets, indices, num_vessels, **kwargs):
         loss_map = {
-            'labels': self.loss_labels_focal if self.focal_loss else self.loss_labels,
+            'labels': self.loss_labels_focal,
             'cardinality': self.loss_cardinality,
             'direction': self.loss_direction,
             'radius': self.loss_radius,

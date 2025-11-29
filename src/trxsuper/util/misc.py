@@ -317,7 +317,7 @@ def get_lr_scheduler(args, optimizer, len_dataloader):
     total_steps = int(args.epochs) * len_dataloader * int(args.traj_train_len)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
                                                            T_max=total_steps,  # Maximum number of iterations
-                                                           eta_min=args.min_lr)  # Minimum learning rate.
+                                                           eta_min=args.lr*args.min_lr_mltp)  # Minimum learning rate.
 
     return scheduler
 

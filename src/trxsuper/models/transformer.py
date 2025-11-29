@@ -19,7 +19,7 @@ class SwinUneTransformer(nn.Module):
                  normalize_before=False, return_intermediate_dec=False,
                  img_size=[32, 32, 32], in_channels=2, out_channels=96,
                  depths=[2, 2, 2, 2], num_heads=[2, 4, 8, 16], feature_size=24,
-                 patch_size=1, window_size=8, mem_vol_ds=1, focus_vol_size=False):
+                 patch_size=1, window_size=8, focus_vol_size=False):
         super().__init__()
 
         assert focus_vol_size < img_size[0], "focus_vol_size should be less than sub_vol_size!"
@@ -32,7 +32,6 @@ class SwinUneTransformer(nn.Module):
             'feature_size': feature_size,
             'patch_size': patch_size,
             'window_size': window_size,
-            'mem_vol_ds': mem_vol_ds,
         }
         _encoder = SwinUNETR(**swin_unetr_kwargs)
         self.encoder = _encoder
@@ -266,14 +265,13 @@ def build_transformer(args):
         normalize_before=args.pre_norm,
         return_intermediate_dec=True,
         img_size=[args.sub_vol_size] * 3,
-        in_channels=1 if args.past_tr_type == 'prev_pos' else 2,
+        in_channels=1,
         out_channels=args.hidden_dim,
         depths=args.depths,
         num_heads=args.num_heads,
         feature_size=args.unetr_dim,
         patch_size=args.patch_size,
         window_size=args.window_size,
-        mem_vol_ds=args.mem_vol_ds,
         focus_vol_size=args.focus_vol_size,
     )
 

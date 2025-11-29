@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import re
 import copy
-
+import networkx as nx
 from scipy.stats import laplace
 from scipy.interpolate import CubicSpline, interp1d
 import os
@@ -1210,17 +1210,25 @@ class LoadImageCropsAndTrees(Transform):
         self.annots = annots
         self.image_mins = image_mins
         self.masks = masks
+        self.seq_len = seq_len
+        self.num_prev_pos = num_prev_pos
         self.sub_vol_size = sub_vol_size
         self.crop_and_pad = CropAndPad(sub_vol_size)
         self.convert_tree_to_targets = ConvertTreeToTargets(seq_len, num_prev_pos, sub_vol_size, class_dict)
 
     def get_annot_dict(self, selected_node, input_dict):
-        _, past_traj_num = ExtRandomSubTree.get_past_traj_start(selected_node, self.get_sub_tree.num_prev_pos)
+        _, past_traj_num = ExtRandomSubTree.get_past_traj_start(selected_node, self.num_prev_pos)
         selected_node, past_traj_head_node = ExtRandomSubTree.create_subtree_with_past_tr_val(selected_node,
-                                                                                           past_traj_num, self.get_sub_tree.seq_len)
+                                                                                              past_traj_num, self.seq_len)
         data = self.convert_tree_to_targets.extract_sub_tree(selected_node)
         data['past_tr'] = self.convert_tree_to_targets.generate_past_trajectory_pp(selected_node, data['root_position'])
         data.update(input_dict)
+
+        selected_node_cp = copy.deepcopy(selected_node)
+        selected_node_cp.parent = None
+        selected_node_cp = convert_to_networkx(nx.DiGraph(), selected_node_cp,
+                                               root_position=data['root_position'], sub_vol_size=self.sub_vol_size)
+        data['selected_node'] = selected_node_cp
 
         return data
 
@@ -1293,6 +1301,22 @@ class LoadImageCropsAndTreesd(MapTransform):
         d = dict(data)
         for key in self.keys:
             d[key], image, mask = self.transform(d[key])
-            d['image'] = self.norm(image) if self.norm_crop else image
+            d['image'] = image
             d['mask'] = mask
         return d
+
+
+def convert_to_networkx(G, tree, root_position, sub_vol_size):
+    """
+    Function to traverse the bigtree tree and create the NetworkX graph
+    """
+    position = (np.array(tree.position) - np.array(root_position) + np.array(sub_vol_size / 2)).tolist()
+    G.add_node(tree.node_name, position=position, radius=tree.radius)
+
+    if tree.parent is not None:
+        G.add_edge(tree.parent.node_name, tree.node_name)
+
+    for child in tree.children:
+        convert_to_networkx(G, child, root_position, sub_vol_size)
+
+    return G

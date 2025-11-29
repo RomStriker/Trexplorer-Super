@@ -13,7 +13,7 @@ import monai
 from monai.data import ThreadDataLoader, set_track_meta
 from trxsuper.engine_trx import TrexplorerSuper
 import trxsuper.util.eval_utils as eval_utils
-from trxsuper.util.eval_utils import get_score_nx_single
+from trxsuper.util.eval_utils import get_score_nx
 import trxsuper.util.misc as utils
 import trxsuper.datasets.cache_dataset_vtl as cd_vtl
 from trxsuper.models import build_model
@@ -63,8 +63,8 @@ def build_dataloaders_vtl(args):
         data_loader_val = ThreadDataLoader(dataset_val, batch_size=args.batch_size_val,
                                            collate_fn=cd_vtl.val_collate_fn, num_workers=0)
     if args.sub_volume_eval:
-        data_loader_val_sv = ThreadDataLoader(dataset_val_sv, batch_size=args.batch_size,
-                                              collate_fn=cd_vtl.train_collate_fn, num_workers=0)
+         data_loader_val_sv = ThreadDataLoader(dataset_val_sv, batch_size=args.batch_size,
+                                              collate_fn=cd_vtl.val_sv_collate_fn, num_workers=0)
 
     return data_loader_train, data_loader_val, data_loader_val_sv
 
@@ -93,7 +93,7 @@ def run_evaluation(args, engine_trx, model, data_loader_val, data_loader_val_sv,
         for sample in test_sample_list:
             preds, targets, sample_ids, samples, masks, elapsed_time = engine_trx.evaluate_sinsam(model,
                                                                                                   sample)
-            stats_reduced = get_score_nx_single(preds, targets, elapsed_time, args.distributed)
+            stats_reduced = get_score_nx(preds, targets, elapsed_time, args.distributed)
 
             # Save results
             pred_dict = {'preds': preds, 'targets': targets, 'target_ids': sample_ids,
@@ -110,7 +110,7 @@ def run_evaluation(args, engine_trx, model, data_loader_val, data_loader_val_sv,
     if args.sub_volume_eval:
         preds, targets, sample_ids, samples, masks, elapsed_time = engine_trx.evaluate_sv(model,
                                                                                           data_loader_val_sv)
-        stats_reduced_sv = get_score_nx_single(preds, targets, elapsed_time, args.distributed)
+        stats_reduced_sv = get_score_nx(preds, targets, elapsed_time, args.distributed)
         pred_dict = {'preds': preds, 'targets': targets, 'samples': samples,
                      'masks': masks, 'elapsed_time': elapsed_time, 'stats_reduced': stats_reduced_sv}
 
@@ -123,7 +123,7 @@ def run_evaluation(args, engine_trx, model, data_loader_val, data_loader_val_sv,
         args.batch_size_per_sample = args.batch_size
         preds, targets, sample_ids, samples, masks, elapsed_time = engine_trx.evaluate_val(model,
                                                                                            data_loader_val)
-        stats_reduced = get_score_nx_single(preds, targets, elapsed_time, args.distributed)
+        stats_reduced = get_score_nx(preds, targets, elapsed_time, args.distributed)
 
         # Save results
         pred_dict = {'preds': preds, 'targets': targets, 'target_ids': sample_ids,
@@ -143,14 +143,6 @@ def print_log_training_metrics(logger, epoch, metrics, st):
     elapsed_time = et - st
     if utils.get_rank() == 0:
         logger.info(f"Epoch: {epoch} \t | \t loss: {metrics['scaled_losses']} \t\t | \t time taken: {elapsed_time}")
-
-
-def clear_memory_custom(args):
-    if args.gc_level == 1:
-        torch.cuda.empty_cache()
-    elif args.gc_level == 2:
-        gc.collect()
-        torch.cuda.empty_cache()
 
 
 def train(args: Namespace) -> None:
@@ -248,9 +240,6 @@ def train(args: Namespace) -> None:
                                                      data_loader_train, optimizer, lr_scheduler, scaler)
             print_log_training_metrics(logger, epoch, metrics, st)
 
-            # clear memory
-            clear_memory_custom(args)
-
             if args.distributed:
                 torch.distributed.barrier()
 
@@ -274,26 +263,23 @@ def train(args: Namespace) -> None:
                 or epoch == (args.epochs - 1) and args.val_interval_sv):
             preds, targets, sample_ids, samples, masks, elapsed_time = engine_trx.evaluate_sv(model,
                                                                                               data_loader_val_sv)
-            stats_reduced_sv = get_score_nx_single(preds, targets, elapsed_time, args.distributed)
+            stats_reduced_sv = get_score_nx(preds, targets, elapsed_time, args.distributed)
 
             if utils.get_rank() == 0:
                 logger.info("Sub-volume Eval:")
                 stats_message = eval_utils.get_stats_message(stats_reduced_sv, averages_only=True)
                 logger.info(stats_message)
 
-            # clear memory
-            clear_memory_custom(args)
-
         if args.volume_eval and (not epoch % args.val_interval) or epoch == (args.epochs - 1):
             if not epoch:
                 args.batch_size_per_sample = args.batch_size
-                logger.info("sub_vol batch_size_per_sample: ", args.batch_size_per_sample)
+                logger.info(f"batch_size_per_sample: {args.batch_size}")
 
             preds, targets, sample_ids, samples, masks, elapsed_time = engine_trx.evaluate_val(model,
                                                                                                data_loader_val)
 
             # Compute Acc, Recall and F1
-            stats_reduced = get_score_nx_single(preds, targets, elapsed_time, args.distributed)
+            stats_reduced = get_score_nx(preds, targets, elapsed_time, args.distributed)
 
             # Save results
             pred_dict = {'preds': preds, 'targets': targets, 'target_ids': sample_ids,
@@ -308,9 +294,6 @@ def train(args: Namespace) -> None:
                 if stats_reduced['avg_scores'][5] > best_f1_nd_dist:
                     best_f1_nd_dist = stats_reduced['avg_scores'][5]
                     new_best_nd = True
-
-            # clear memory
-            clear_memory_custom(args)
 
         if utils.get_rank() == 0 and args.output_dir:
             checkpoint_paths = []
