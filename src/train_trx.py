@@ -181,7 +181,7 @@ def train(args: Namespace) -> None:
 
     # load previous checkpoint if provided
     if args.resume:
-        checkpoint = torch.load(args.resume, map_location='cpu')
+        checkpoint = torch.load(args.resume, map_location='cpu', weights_only=False)
     else:
         checkpoint = {}
 

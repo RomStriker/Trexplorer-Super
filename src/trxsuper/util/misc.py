@@ -293,7 +293,7 @@ def nested_dict_to_device(dictionary, device):
 
 
 def restore_config(args):
-    checkpoint = torch.load(args.resume, map_location='cpu')
+    checkpoint = torch.load(args.resume, map_location='cpu', weights_only=False)
     args_n = checkpoint['args']
 
     # add eval args

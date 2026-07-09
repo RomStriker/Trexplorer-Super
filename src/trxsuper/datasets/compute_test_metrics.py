@@ -39,7 +39,7 @@ def load_graphs(pred_dir, gt_dir, dataset='atm22'):
         with open(target_file, 'rb') as handle:
             target = pickle.load(handle)
         targets.append(target['networkx'][0])
-        pred = torch.load(pred_file)
+        pred = torch.load(pred_file, weights_only=False)
         preds.append(pred['preds'][0])
 
     return preds, targets, sample_ids
@@ -61,7 +61,7 @@ def load_graphs_parse_lr(pred_dir):
     for i, pred_file in enumerate(pred_files):
         sample_id = os.path.basename(pred_file).split('.')[0]
         sample_ids.append(sample_id)
-        output = torch.load(pred_file)
+        output = torch.load(pred_file, weights_only=False)
         preds.append(output['preds'][0])
         targets.append(output['targets'][0])
 
