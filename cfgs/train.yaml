@@ -89,7 +89,7 @@ max_nodes_per_level: 200
 test_sample: [] # list of 'sample_id-tree_id'
 
 # window input intensity values (clamp)
-# Synthetic: False or [255, 0], ATM: [-500, -1000], PARSE: [700, -1000]
+# Synthetic: False or [255, 0], ATM: True and [-500, -1000], PARSE: True and [700, -1000]
 window_input: False
 window_max: 255
 window_min: 0

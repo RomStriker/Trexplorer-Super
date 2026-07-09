@@ -350,12 +350,12 @@ class TrexplorerSuper:
         past_traj_label = []
         current_node = self.get_node(node_id, tree)
         parent = current_node
-        root_position = np.asarray(current_node['position'])
+        root_position = np.asarray(current_node['position']).astype(int)
 
         for _ in range(self.args.num_prev_pos):
             node_info_list = []
             node_position = (np.asarray(parent['position']) - root_position).astype(float)
-            node_position /= (self.args.focus_vol_size // 2)
+            node_position /= (self.args.sub_vol_size // 2)
             node_info_list.append(node_position)
             node_radius = np.asarray(parent['radius']).reshape(1)
             node_radius /= (self.args.sub_vol_size // 2)
@@ -760,6 +760,9 @@ class TrexplorerSuper:
                                                                            next_step, node_perma_finished_branches, perma_end_classes,
                                                                            query_classes, selected_queries, point_hidden_state)
 
+                                for node in curr_step:
+                                    pred_tree.nodes[node].pop("hidden_state", None)
+
                                 curr_step = next_step
                                 indices = self.get_updated_indices_nx(indices, curr_step, pred_tree)
                                 prev_step_info['indices'][sq_i] = indices[0]
@@ -968,6 +971,8 @@ class TrexplorerSuper:
                                                                        next_step, node_perma_finished_branches, perma_end_classes,
                                                                        query_classes, selected_queries, point_hidden_state)
 
+                            for node in curr_step:
+                                pred_tree.nodes[node].pop("hidden_state", None)
                             curr_step = next_step
                             indices = self.get_updated_indices_nx(indices, curr_step, pred_tree)
                             prev_step_info['indices'][sq_i] = indices[0]

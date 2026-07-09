@@ -300,10 +300,10 @@ def restore_config(args):
     if args.eval_only:
         args_n.resume = args.resume
         args_n.output_dir = args.output_dir
-        args_n.dataset = args.dataset
         args_n.data_dir = args.data_dir
         args_n.eval_only = args.eval_only
         args_n.mask = args.mask
+        args_n.test_sample = args.test_sample
 
     # add possible missing args
     for k in args.__dict__:
